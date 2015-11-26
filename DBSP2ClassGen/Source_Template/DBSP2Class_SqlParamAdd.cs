@@ -1,0 +1,1 @@
+this.cmd.Paramters.Add(p_%%VARIABLE%%);

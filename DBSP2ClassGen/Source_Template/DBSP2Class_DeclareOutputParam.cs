@@ -1,0 +1,1 @@
+public %%OUTPUT_PARAM_TYPE%% %%OUTPUT_PARAM_NAME%%;
