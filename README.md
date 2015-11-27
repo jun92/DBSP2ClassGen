@@ -5,4 +5,4 @@ When you start using MS SQL servers. DBA in your company said "please use stored
 
 now. I strongly recommand you don't need that any longer. just make a procedure in your database and run this program. it will make source code for you to make a classes for using all procedures in your DB.
 
-it's v0.1 now, and I have several ideas to make it more helpful and practical. it will be kept updating. thanks.
+it's under development now, and I have several ideas to make it more helpful and practical. it will be kept updating. thanks.
