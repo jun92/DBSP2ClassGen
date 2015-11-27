@@ -143,17 +143,78 @@ namespace DBSP2ClassGen
                 StringBuilder sqlParamAdd = new StringBuilder();
                 sqlParamAdd.Append(MakeSqlParamAdd(pair.Value));
 
+                StringBuilder saveOutputParam = new StringBuilder();
+                saveOutputParam.Append(MakeSaveOutputParam(pair.Value));
+
+                StringBuilder DeclareMethodParam = new StringBuilder();
+                DeclareMethodParam.Append(MakeDeclareMethodParam(pair.Value)); 
+
 
                 classstring.Replace("%%DECLARE_OUTPUT_PARAM%%", declare.ToString());
                 classstring.Replace("%%SP_NAME%%", pair.Key.ToString());
                 classstring.Replace("%%SQLPARAM_INIT%%", sqlparam_init.ToString());
                 classstring.Replace("%%SQLPARAM_ADD%%", sqlParamAdd.ToString());
-
+                classstring.Replace("%%SAVE_OUTPUT_PARAM%%", saveOutputParam.ToString());
+                classstring.Replace("%%DECLARE_METHOD_PARAMS%%", DeclareMethodParam.ToString());
 
                 result.Append(classstring.ToString());                
             }
             return result.ToString();
         }
+
+        private string MakeDeclareMethodParam( List<SQLParam> param)
+        {
+            StringBuilder result = new StringBuilder();
+            List<String> declare_param_list = new List<String>(); 
+
+            foreach( SQLParam sp in param)
+            {
+                if( !sp.IsOutput ) // input parameters should be in method's signature.
+                {
+                    StringBuilder p = new StringBuilder();
+                    p.Append(ConvertSqlType2CSType(sp.ParamType.ToString()));
+                    p.Append(" ");
+
+                    StringBuilder p_name = new StringBuilder(sp.ParamName.ToString());
+                    p_name.Remove(0, 1);
+                    p.Append(p_name.ToString());
+
+                    declare_param_list.Add(p.ToString());
+                }
+            }
+            for( int i = 0; i < declare_param_list.Count; i++)
+            {
+                result.Append(declare_param_list[i].ToString());
+                if (i != (declare_param_list.Count - 1))
+                    result.Append(", ");
+            }
+            return result.ToString();
+            
+        }
+        private string MakeSaveOutputParam( List<SQLParam> param)
+        {
+            StringBuilder result = new StringBuilder();
+
+            foreach( SQLParam sp in param)
+            {
+                if (sp.IsOutput)
+                {
+                    StringBuilder savestring = new StringBuilder();
+                    savestring.Append(SaveOutputParam.ToString());
+
+                    StringBuilder p_name = new StringBuilder(sp.ParamName.ToString());
+                    p_name.Remove(0, 1);
+
+                    savestring.Replace("%%SQL_PARAM_NAME%%", p_name.ToString());
+                    savestring.Replace("%%OUTPUT_PARAM_TYPE%%", ConvertSqlType2CSType(sp.ParamType.ToString()));
+
+                    result.Append(savestring.ToString());
+                }
+
+            }
+            return result.ToString();
+        }
+
         private string MakeSqlParamAdd( List<SQLParam> param)
         {
             StringBuilder result = new StringBuilder();
@@ -162,12 +223,9 @@ namespace DBSP2ClassGen
             {
                 StringBuilder addstring = new StringBuilder();
                 addstring.Append(SqlParamAdd.ToString());
-
                 StringBuilder p_name = new StringBuilder(sp.ParamName.ToString());
                 p_name.Remove(0, 1);
-
                 addstring.Replace("%%VARIABLE%%", p_name.ToString());
-
                 result.Append(addstring.ToString());
             }
             return result.ToString();
@@ -264,42 +322,18 @@ namespace DBSP2ClassGen
             StringBuilder cs_type = new StringBuilder();
             switch( sqlType.ToLower() )
             {
-                case "bigint":
-                    cs_type.Append("int64");
-                    break;
-                case "int":
-                    cs_type.Append("int");
-                    break;
-                case "smallint":
-                    cs_type.Append("short");
-                    break;
-                case "tinyint":
-                    cs_type.Append("byte");
-                    break;
-                case "bit":
-                    cs_type.Append("bool");
-                    break;
-                case "varchar":
-                    cs_type.Append("string");
-                    break;
-                case "char":
-                    cs_type.Append("string");
-                    break;
-                case "nvarchar":
-                    cs_type.Append("string");
-                    break;
-                case "nchar":
-                    cs_type.Append("string");
-                    break;
-                case "decimal":
-                    cs_type.Append("decimal");
-                    break;
-                case "float":
-                    cs_type.Append("float");
-                    break;
-                case "datetime":
-                    cs_type.Append("DateTime");
-                    break;
+                case "bigint":      cs_type.Append("long");    break;
+                case "int":         cs_type.Append("int");      break;
+                case "smallint":    cs_type.Append("short");    break;
+                case "tinyint":     cs_type.Append("byte");     break;
+                case "bit":         cs_type.Append("bool");     break;
+                case "varchar":     cs_type.Append("string");   break;
+                case "char":        cs_type.Append("string");   break;
+                case "nvarchar":    cs_type.Append("string");   break;
+                case "nchar":       cs_type.Append("string");   break;
+                case "decimal":     cs_type.Append("decimal");  break;
+                case "float":       cs_type.Append("float");    break;
+                case "datetime":    cs_type.Append("DateTime"); break;
             }
             return cs_type.ToString();
         }
@@ -352,13 +386,5 @@ namespace DBSP2ClassGen
             con.Close();
             return true;
         }
-
-
-        
-
-
-
-
-        
     }
 }

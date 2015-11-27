@@ -1,1 +1,1 @@
-this.cmd.Paramters.Add(p_%%VARIABLE%%);
+		this.cmd.Parameters.Add(p_%%VARIABLE%%);

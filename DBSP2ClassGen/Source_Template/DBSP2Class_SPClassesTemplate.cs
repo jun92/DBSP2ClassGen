@@ -3,7 +3,7 @@ public class %%SP_NAME%% : dbclass_%%DATABASE_NAME%%
 	public List<Dictionary<string, dynamic>> r;	
 	public int _ReturnValue;
 	
-	%%DECLARE_OUTPUT_PARAM%%
+%%DECLARE_OUTPUT_PARAM%%
 	
 	public %%SP_NAME%%( %%DECLARE_METHOD_PARAMS%% )
 	{
@@ -12,12 +12,12 @@ public class %%SP_NAME%% : dbclass_%%DATABASE_NAME%%
 		
 		this.r = new List<Dictionary<string, dynamic>>();
 		
-		%%SQLPARAM_INIT%% 		
+%%SQLPARAM_INIT%% 		
 		
 		SqlParameter sp_return_val = new SqlParameter("@ReturnValue", 0);
         sp_return_val.Direction = ParameterDirection.ReturnValue;
 		
-		%%SQLPARAM_ADD%% 
+%%SQLPARAM_ADD%% 
 		this.cmd.Parameters.Add(sp_return_val);
 		
 		try
@@ -43,8 +43,7 @@ public class %%SP_NAME%% : dbclass_%%DATABASE_NAME%%
 			sdr.Close();
 			conn.Close();
 			
-			%%SAVE_OUTPUT_PARAM%% 
-			
+%%SAVE_OUTPUT_PARAM%% 
 			this._ReturnValue = (int)sp_return_val.Value;
 			return;
 		}
