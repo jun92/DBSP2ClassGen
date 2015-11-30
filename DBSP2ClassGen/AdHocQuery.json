@@ -1,0 +1,14 @@
+﻿{
+    "AdHocQueries": [
+        {
+            "QueryId": "LevelUpdate",
+            "QueryString": "UPDATE tbl_account SET level = @level WHERE user_seq = @user_seq",
+            "ParamInfo": [ { "name" : "level", "type": "int" }, { "name": "user_seq", "type": "string" } ]
+        },
+        {
+            "QueryId": "AccountInfo",
+            "QueryString": "SELECT * FROM tbl_account WHERE Nickname = @nickname",
+            "ParamInfo": [ { "name":  "nickname", "type": "String" } ]
+        }
+    ]
+}

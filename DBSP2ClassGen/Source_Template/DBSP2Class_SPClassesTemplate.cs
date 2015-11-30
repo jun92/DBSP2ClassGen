@@ -1,11 +1,11 @@
-public class %%SP_NAME%% : dbclass_%%DATABASE_NAME%%
+public class %%CLASS_NAME%% : dbclass_%%DATABASE_NAME%%
 {
 	public List<Dictionary<string, dynamic>> r;	
 	public int _ReturnValue;
 	
 %%DECLARE_OUTPUT_PARAM%%
 	
-	public %%SP_NAME%%( %%DECLARE_METHOD_PARAMS%% )
+	public %%CLASS_NAME%%( %%DECLARE_METHOD_PARAMS%% )
 	{
 		this.cmd.CommandType = System.Data.CommandType.StoredProcedure;
 		this.cmd.CommandText = "%%SP_NAME%%";

@@ -88,7 +88,10 @@ namespace DBSP2ClassGen
                 DBSP2ClassGen.dbhandler d = new DBSP2ClassGen.dbhandler();
                 d.BuildAllStoredProcedureInfo(txtIP.Text.ToString(), txtPort.Text.ToString(), txtUsername.Text.ToString(), txtPassword.Text.ToString(), cbxDatabaseList.Text.ToString());
                 d.LoadAllTemplate();
+                d.LoadAdHocQueryInfo("11");
                 d.Build();
+
+                
                 
                 
             }

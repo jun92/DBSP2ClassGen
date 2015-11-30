@@ -7,6 +7,10 @@ using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Windows.Forms;
+using System.Net.Json;
+//using Newtonsoft.Json;
+
+
 
 namespace DBSP2ClassGen
 {
@@ -28,6 +32,22 @@ namespace DBSP2ClassGen
         private StringBuilder dbname;
 
         private Dictionary<String, List<SQLParam>> aspi;
+        private List<AdHocQuery> AdHocQueryInfo;
+
+        struct SQLParam
+        {
+            public int ParamID;
+            public String ParamName;
+            public String ParamType;
+            public short ParamSize;
+            public bool IsOutput;
+        }
+        struct AdHocQuery
+        {
+            public String QueryId;
+            public String QueryString;
+            public Dictionary<String, String> ParamInfo;
+        }
 
         public dbhandler()
         {
@@ -76,14 +96,8 @@ namespace DBSP2ClassGen
             sw.Close();
             return true;
         }
-        struct SQLParam
-        {
-            public int ParamID;
-            public String ParamName;
-            public String ParamType;
-            public short ParamSize;
-            public bool IsOutput;
-        }
+        
+
         public List<string> GetDatabaseList(string server, string port, string id, string pwd)
         {
 
@@ -125,33 +139,41 @@ namespace DBSP2ClassGen
 
             return true;
         }
+        
         private string CreateClassSource()
         {
             StringBuilder result = new StringBuilder();
 
             foreach ( KeyValuePair<string, List<SQLParam>> pair in aspi)
             {
+                // building class form.
                 StringBuilder classstring = new StringBuilder();
                 classstring.Append(SPClassesTemplate.ToString() ); 
 
+                // building "decalre variables" <- it should be output param.
                 StringBuilder declare = new StringBuilder();
                 declare.Append(MakeDeclareOutputParam(pair.Value));
 
+                // build variables initialization code 
                 StringBuilder sqlparam_init = new StringBuilder();
                 sqlparam_init.Append(MakeSqlParamInit(pair.Value));
 
+                // build variables added to SqlCommand object.
                 StringBuilder sqlParamAdd = new StringBuilder();
                 sqlParamAdd.Append(MakeSqlParamAdd(pair.Value));
 
+                // build code to return the output params 
                 StringBuilder saveOutputParam = new StringBuilder();
                 saveOutputParam.Append(MakeSaveOutputParam(pair.Value));
 
+                // build method's signature.
                 StringBuilder DeclareMethodParam = new StringBuilder();
                 DeclareMethodParam.Append(MakeDeclareMethodParam(pair.Value)); 
 
 
                 classstring.Replace("%%DECLARE_OUTPUT_PARAM%%", declare.ToString());
                 classstring.Replace("%%SP_NAME%%", pair.Key.ToString());
+                classstring.Replace("%%CLASS_NAME%%", pair.Key.ToString());
                 classstring.Replace("%%SQLPARAM_INIT%%", sqlparam_init.ToString());
                 classstring.Replace("%%SQLPARAM_ADD%%", sqlParamAdd.ToString());
                 classstring.Replace("%%SAVE_OUTPUT_PARAM%%", saveOutputParam.ToString());
@@ -159,6 +181,38 @@ namespace DBSP2ClassGen
 
                 result.Append(classstring.ToString());                
             }
+
+            foreach( AdHocQuery item in AdHocQueryInfo)
+            {
+                // building class form.
+                StringBuilder classstring = new StringBuilder();
+                classstring.Append(SPClassesTemplate.ToString());
+
+                StringBuilder sqlparam_init = new StringBuilder();
+                sqlparam_init.Append(MakeSqlParamInit_AdHoc(item.ParamInfo));
+
+                StringBuilder sqlparam_add = new StringBuilder();
+                sqlparam_add.Append(MakeSqlParamAdd_AdHoc(item.ParamInfo));
+
+                StringBuilder DeclareMethodParams = new StringBuilder();
+                DeclareMethodParams.Append(MakeDeclareMethodParam_AdHoc(item.ParamInfo));               
+
+
+                classstring.Replace("System.Data.CommandType.StoredProcedure", "System.Data.CommandType.Text");
+                classstring.Replace("%%DECLARE_OUTPUT_PARAM%%", "");
+                classstring.Replace("%%SAVE_OUTPUT_PARAM%%", "");
+                classstring.Replace("%%SP_NAME%%", item.QueryString.ToString());
+                classstring.Replace("%%CLASS_NAME%%", item.QueryId.ToString());
+
+                classstring.Replace("%%SQLPARAM_INIT%%", sqlparam_init.ToString());
+                classstring.Replace("%%SQLPARAM_ADD%%", sqlparam_add.ToString());
+
+                classstring.Replace("%%DECLARE_METHOD_PARAMS%%", DeclareMethodParams.ToString());
+
+                classstring.Replace("%%SAVE_OUTPUT_PARAM%%", "");
+                result.Append(classstring.ToString());
+            }             
+            
             return result.ToString();
         }
 
@@ -189,7 +243,21 @@ namespace DBSP2ClassGen
                     result.Append(", ");
             }
             return result.ToString();
-            
+        }
+        private  string MakeDeclareMethodParam_AdHoc(Dictionary<String,String> param)
+        {
+            StringBuilder result = new StringBuilder();
+            int i = 0 ;             
+            foreach (KeyValuePair<String, String> pair in param)
+            {
+                result.Append(pair.Value.ToString() + " " + pair.Key.ToString());
+                i++;
+                if( i != param.Count )
+                {
+                    result.Append(",");
+                }
+            }
+            return result.ToString(); 
         }
         private string MakeSaveOutputParam( List<SQLParam> param)
         {
@@ -230,6 +298,20 @@ namespace DBSP2ClassGen
             }
             return result.ToString();
         }
+        private string MakeSqlParamAdd_AdHoc( Dictionary<String, String> param)
+        {
+            StringBuilder result = new StringBuilder();
+            
+
+            foreach (KeyValuePair<String, String> pair in param)
+            {
+                StringBuilder addstring = new StringBuilder();
+                addstring.Append(SqlParamAdd.ToString()); // 템플릿 로그 
+                addstring.Replace("%%VARIABLE%%", pair.Key.ToString());
+                result.Append(addstring.ToString());
+            }
+            return result.ToString(); 
+        }
         private string MakeSqlParamInit(List<SQLParam> param)
         {
             StringBuilder result = new StringBuilder();
@@ -261,6 +343,23 @@ namespace DBSP2ClassGen
             
             return result.ToString();
         }
+        
+        private string MakeSqlParamInit_AdHoc(Dictionary<string,string> param)
+        {
+            StringBuilder result = new StringBuilder();
+            
+
+            foreach( KeyValuePair<String, String> pair in param)            
+            {
+                StringBuilder initstring = new StringBuilder();
+                initstring.Append(SqlParamInit_Input.ToString()); // 템플릿 로그 
+                initstring.Replace("%%SQL_PARAM_NAME%%", pair.Key.ToString());
+                initstring.Replace("%%DIRECTION%%", "Input"); 
+                result.Append(initstring.ToString()); 
+            }
+            return result.ToString();
+        }
+        
 
         private string MakeDeclareOutputParam(List<SQLParam> param)
         {
@@ -386,5 +485,63 @@ namespace DBSP2ClassGen
             con.Close();
             return true;
         }
-    }
-}
+        
+        public bool LoadAdHocQueryInfo(string filename)
+        {
+
+            AdHocQueryInfo = new List<AdHocQuery>();
+            string jsonText = LoadJson(@"D:\SyncnetPlatform\DBSP2Class\C#\DBSP2ClassGen\DBSP2ClassGen\AdHocQuery.json");
+
+            JsonTextParser parser = new JsonTextParser();
+            JsonObjectCollection obj = (JsonObjectCollection) parser.Parse(jsonText);
+
+            //MessageBox.Show(obj["AdHocQueries"].ToString(),"1");
+
+            foreach( JsonObject iter_q in obj )
+            {
+                JsonArrayCollection q = (JsonArrayCollection)iter_q;
+
+                foreach( JsonObject iter_o in q)
+                {
+                    AdHocQuery ahq = new AdHocQuery();
+                    JsonObjectCollection o = (JsonObjectCollection)iter_o;
+                    //MessageBox.Show(o["QueryId"].Name + " : " + o["QueryId"].GetValue().ToString() , "3");
+                    //MessageBox.Show(o["QueryString"].Name + " : " + o["QueryString"].GetValue().ToString(), "4");
+                    //MessageBox.Show(o["ParamInfo"].Name + ":" + o["ParamInfo"].GetValue().ToString(), "5");
+
+                    ahq.QueryId = o["QueryId"].GetValue().ToString();
+                    ahq.QueryString = o["QueryString"].GetValue().ToString();
+                    ahq.ParamInfo = new Dictionary<string, string>();                   
+
+                    List<JsonObject> s2 = (List < JsonObject >) o["ParamInfo"].GetValue(); 
+                    foreach( JsonObject s in s2)
+                    {
+                        JsonObjectCollection s3 = (JsonObjectCollection)s;
+                        //MessageBox.Show(s3["name"].GetValue().ToString(), "6");
+                        //MessageBox.Show(s3["type"].GetValue().ToString(), "7");
+
+                        ahq.ParamInfo.Add(s3["name"].GetValue().ToString(), s3["type"].GetValue().ToString());
+
+                    }
+                    AdHocQueryInfo.Add(ahq);
+                }
+            }
+            return true;
+        }
+
+  
+
+        public string LoadJson(string filename)
+        {
+            StringBuilder temp = new StringBuilder();
+            StreamReader sr = new StreamReader(filename);
+            while (sr.Peek() >= 0)
+            {
+                temp.Append(sr.ReadLine());                
+            }
+            sr.Close();
+            return temp.ToString();
+        }
+    } // end of class 
+} // end of namespace 
+
