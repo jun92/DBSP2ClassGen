@@ -46,6 +46,7 @@
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.button2 = new System.Windows.Forms.Button();
             this.SavefolderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
+            this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
@@ -193,8 +194,10 @@
             // 
             this.openFileDialog1.DefaultExt = "ini";
             this.openFileDialog1.FileName = "openFileDialog1";
+            this.openFileDialog1.Filter = "JSON file|*.json";
             this.openFileDialog1.InitialDirectory = ".";
             this.openFileDialog1.Title = "Choose ini file";
+            this.openFileDialog1.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog1_FileOk);
             // 
             // button1
             // 
@@ -229,6 +232,13 @@
             this.button2.Text = "Create source files";
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // saveFileDialog1
+            // 
+            this.saveFileDialog1.DefaultExt = "cs";
+            this.saveFileDialog1.FileName = "SyncnetPlatform.database_.cs";
+            this.saveFileDialog1.Filter = "cs file(*.cs)|*.cs";
+            this.saveFileDialog1.Title = "Save generated file as...";
             // 
             // MainForm
             // 
@@ -269,6 +279,7 @@
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.FolderBrowserDialog SavefolderBrowserDialog;
+        private System.Windows.Forms.SaveFileDialog saveFileDialog1;
     }
 }
 

@@ -7,22 +7,41 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.IO;
+
 
 namespace DBSP2ClassGen
 {
     public partial class MainForm : Form
     {
-        public string IniFileName; 
-
+        public string IniFileName;
+        public string adHocFilename;
+        public string AppDefaultDir; 
         public MainForm()
         {
             InitializeComponent();
 
-            txtIP.Text = "127.0.0.1";
-            txtPort.Text = "1433";
-            txtUsername.Text = "sa";
-            txtPassword.Text = "123456";
-            cbxDatabaseList.Text = "gameuserdb";
+            if( File.Exists("./config.json") )
+            {
+                DBSP2ClassGen.dbhandler d = new DBSP2ClassGen.dbhandler();
+                ConfigInfo ci = new ConfigInfo();
+                d.GetConfigInfo(ref ci);
+
+
+                txtIP.Text = ci.IP.ToString();
+                txtPort.Text = ci.port.ToString();
+                txtUsername.Text = ci.Username.ToString();
+                txtPassword.Text = ci.password.ToString();
+                cbxDatabaseList.Text = ci.dbname.ToString();
+                if( ci.adHocFilename != null )
+                    lblAdHoc.Text = ci.adHocFilename.ToString();
+                
+
+            }
+
+            
+
+            AppDefaultDir = System.Environment.CurrentDirectory;
         }
 
         private void textBox4_TextChanged(object sender, EventArgs e)
@@ -38,10 +57,15 @@ namespace DBSP2ClassGen
 
         private void button1_Click(object sender, EventArgs e)
         {
+            openFileDialog1.Filter = "JSON file(*.json)|*.json";
+            openFileDialog1.InitialDirectory = ".";
+            openFileDialog1.FileName = "";            
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 this.IniFileName = openFileDialog1.FileName;
-                lblAdHoc.Text = "Ad-hoc Query File : " + this.IniFileName;                
+                lblAdHoc.Text = "Ad-hoc Query File : " + this.IniFileName;
+
+                adHocFilename = new StringBuilder(openFileDialog1.FileName).ToString(); 
             }
         }
 
@@ -76,30 +100,39 @@ namespace DBSP2ClassGen
                txtPort.Text.ToString().Length == 0 && 
                txtUsername.Text.ToString().Length == 0 &&
                txtPassword.Text.ToString().Length == 0 &&
-               cbxDatabaseList.Text.ToString().Length == 0 ) 
+               cbxDatabaseList.Text.ToString().Length == 0 &&
+               adHocFilename.Length == 0 ) 
             {
                 MessageBox.Show("Fill the empty field(s).","Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            if (SavefolderBrowserDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+
+            saveFileDialog1.InitialDirectory = AppDefaultDir;
+            if( saveFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                String SaveDir = SavefolderBrowserDialog.SelectedPath;
+                String SaveFile = saveFileDialog1.FileName;
 
                 DBSP2ClassGen.dbhandler d = new DBSP2ClassGen.dbhandler();
                 d.BuildAllStoredProcedureInfo(txtIP.Text.ToString(), txtPort.Text.ToString(), txtUsername.Text.ToString(), txtPassword.Text.ToString(), cbxDatabaseList.Text.ToString());
                 d.LoadAllTemplate();
-                d.LoadAdHocQueryInfo("11");
-                d.Build();
-
-                
-                
-                
+                if( adHocFilename != null )
+                { 
+                    d.LoadAdHocQueryInfo(adHocFilename.ToString());
+                }
+                d.Build(saveFileDialog1.FileName.ToString());
+                MessageBox.Show("File generated.", "info", MessageBoxButtons.OK);
+                d.SaveConfig();
             }
             else
             {
                 MessageBox.Show("You canceled.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             
+        }
+
+        private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
+        {            
+
         }
     }
     

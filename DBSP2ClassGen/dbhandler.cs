@@ -7,16 +7,40 @@ using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Windows.Forms;
-using System.Net.Json;
-//using Newtonsoft.Json;
+using Newtonsoft.Json;
 
 
 
 namespace DBSP2ClassGen
 {
+    public class adHocQueryAll
+    {
+        public List<adHocQuery> AdHocQueries;
+    }
+    public class adHocQuery
+    {
+        public string QueryId { get; set; }
+        public string QueryString { get; set; }
+        public List<ParamInfo> ParamInfos;
+    }
+    public class ParamInfo
+    {
+        public String name { get; set; }
+        public String type { get; set; }
+    }
+
+    public class ConfigInfo
+    {
+        public String IP;
+        public String port;
+        public String Username;
+        public String password;
+        public String dbname;
+        public String adHocFilename;
+        public String GeneratedFilename;
+    }
     class dbhandler
     {
-
         private StringBuilder MainTemplate;
         private StringBuilder SPClassesTemplate;
         private StringBuilder SqlParamInit_Output;
@@ -33,6 +57,7 @@ namespace DBSP2ClassGen
 
         private Dictionary<String, List<SQLParam>> aspi;
         private List<AdHocQuery> AdHocQueryInfo;
+        private ConfigInfo ci;
 
         struct SQLParam
         {
@@ -56,6 +81,7 @@ namespace DBSP2ClassGen
             Username = new StringBuilder();
             Password = new StringBuilder();
             dbname = new StringBuilder();
+            ci = new ConfigInfo();
         }
 
         public void LoadAllTemplate()
@@ -119,11 +145,12 @@ namespace DBSP2ClassGen
             return databases_name; 
         }
 
-        public bool Build()
+        public bool Build(string filename)
         {
             StringBuilder SPClasses = new StringBuilder();
             StringBuilder Body = new StringBuilder();
 
+            ci.GeneratedFilename = filename;
             Body = MainTemplate;
 
             SPClasses.Append(CreateClassSource()); 
@@ -135,7 +162,7 @@ namespace DBSP2ClassGen
             Body.Replace("%%USERNAME%%", Username.ToString());
             Body.Replace("%%PASSWORD%%", Password.ToString());
 
-            SaveAsFile(Body.ToString(), @"D:\test.cs");
+            SaveAsFile(Body.ToString(), filename);
 
             return true;
         }
@@ -181,37 +208,39 @@ namespace DBSP2ClassGen
 
                 result.Append(classstring.ToString());                
             }
-
-            foreach( AdHocQuery item in AdHocQueryInfo)
+            if (AdHocQueryInfo != null)
             {
-                // building class form.
-                StringBuilder classstring = new StringBuilder();
-                classstring.Append(SPClassesTemplate.ToString());
+                foreach (AdHocQuery item in AdHocQueryInfo)
+                {
+                    // building class form.
+                    StringBuilder classstring = new StringBuilder();
+                    classstring.Append(SPClassesTemplate.ToString());
 
-                StringBuilder sqlparam_init = new StringBuilder();
-                sqlparam_init.Append(MakeSqlParamInit_AdHoc(item.ParamInfo));
+                    StringBuilder sqlparam_init = new StringBuilder();
+                    sqlparam_init.Append(MakeSqlParamInit_AdHoc(item.ParamInfo));
 
-                StringBuilder sqlparam_add = new StringBuilder();
-                sqlparam_add.Append(MakeSqlParamAdd_AdHoc(item.ParamInfo));
+                    StringBuilder sqlparam_add = new StringBuilder();
+                    sqlparam_add.Append(MakeSqlParamAdd_AdHoc(item.ParamInfo));
 
-                StringBuilder DeclareMethodParams = new StringBuilder();
-                DeclareMethodParams.Append(MakeDeclareMethodParam_AdHoc(item.ParamInfo));               
+                    StringBuilder DeclareMethodParams = new StringBuilder();
+                    DeclareMethodParams.Append(MakeDeclareMethodParam_AdHoc(item.ParamInfo));
 
 
-                classstring.Replace("System.Data.CommandType.StoredProcedure", "System.Data.CommandType.Text");
-                classstring.Replace("%%DECLARE_OUTPUT_PARAM%%", "");
-                classstring.Replace("%%SAVE_OUTPUT_PARAM%%", "");
-                classstring.Replace("%%SP_NAME%%", item.QueryString.ToString());
-                classstring.Replace("%%CLASS_NAME%%", item.QueryId.ToString());
+                    classstring.Replace("System.Data.CommandType.StoredProcedure", "System.Data.CommandType.Text");
+                    classstring.Replace("%%DECLARE_OUTPUT_PARAM%%", "");
+                    classstring.Replace("%%SAVE_OUTPUT_PARAM%%", "");
+                    classstring.Replace("%%SP_NAME%%", item.QueryString.ToString());
+                    classstring.Replace("%%CLASS_NAME%%", item.QueryId.ToString());
 
-                classstring.Replace("%%SQLPARAM_INIT%%", sqlparam_init.ToString());
-                classstring.Replace("%%SQLPARAM_ADD%%", sqlparam_add.ToString());
+                    classstring.Replace("%%SQLPARAM_INIT%%", sqlparam_init.ToString());
+                    classstring.Replace("%%SQLPARAM_ADD%%", sqlparam_add.ToString());
 
-                classstring.Replace("%%DECLARE_METHOD_PARAMS%%", DeclareMethodParams.ToString());
+                    classstring.Replace("%%DECLARE_METHOD_PARAMS%%", DeclareMethodParams.ToString());
 
-                classstring.Replace("%%SAVE_OUTPUT_PARAM%%", "");
-                result.Append(classstring.ToString());
-            }             
+                    classstring.Replace("%%SAVE_OUTPUT_PARAM%%", "");
+                    result.Append(classstring.ToString());
+                }
+            }
             
             return result.ToString();
         }
@@ -347,7 +376,6 @@ namespace DBSP2ClassGen
         private string MakeSqlParamInit_AdHoc(Dictionary<string,string> param)
         {
             StringBuilder result = new StringBuilder();
-            
 
             foreach( KeyValuePair<String, String> pair in param)            
             {
@@ -447,6 +475,12 @@ namespace DBSP2ClassGen
             Username.Append(id.ToString());
             Password.Append(pwd.ToString());
             this.dbname.Append( dbname.ToString());
+
+            ci.IP = server;
+            ci.port = port;
+            ci.Username = id;
+            ci.password = pwd;
+            ci.dbname = dbname;
             
             string connString = "server=" + server + "," + port + ";uid=" + id + ";pwd=" + pwd + ";database=" + dbname;
             SqlConnection con = new SqlConnection(connString);
@@ -484,52 +518,31 @@ namespace DBSP2ClassGen
             sdr.Close();
             con.Close();
             return true;
-        }
-        
+        }        
         public bool LoadAdHocQueryInfo(string filename)
         {
-
+            ci.adHocFilename = filename;
             AdHocQueryInfo = new List<AdHocQuery>();
-            string jsonText = LoadJson(@"D:\SyncnetPlatform\DBSP2Class\C#\DBSP2ClassGen\DBSP2ClassGen\AdHocQuery.json");
 
-            JsonTextParser parser = new JsonTextParser();
-            JsonObjectCollection obj = (JsonObjectCollection) parser.Parse(jsonText);
+            string jsonText = LoadJson(filename);
+            adHocQueryAll aqa = JsonConvert.DeserializeObject<adHocQueryAll>(jsonText);
 
-            //MessageBox.Show(obj["AdHocQueries"].ToString(),"1");
-
-            foreach( JsonObject iter_q in obj )
+            foreach (DBSP2ClassGen.adHocQuery aq in aqa.AdHocQueries)
             {
-                JsonArrayCollection q = (JsonArrayCollection)iter_q;
+                AdHocQuery ahq = new AdHocQuery();
+                ahq.QueryId = aq.QueryId;
+                ahq.QueryString = aq.QueryString;
 
-                foreach( JsonObject iter_o in q)
+                ahq.ParamInfo = new Dictionary<string, string>();
+
+                foreach( DBSP2ClassGen.ParamInfo pi in aq.ParamInfos)
                 {
-                    AdHocQuery ahq = new AdHocQuery();
-                    JsonObjectCollection o = (JsonObjectCollection)iter_o;
-                    //MessageBox.Show(o["QueryId"].Name + " : " + o["QueryId"].GetValue().ToString() , "3");
-                    //MessageBox.Show(o["QueryString"].Name + " : " + o["QueryString"].GetValue().ToString(), "4");
-                    //MessageBox.Show(o["ParamInfo"].Name + ":" + o["ParamInfo"].GetValue().ToString(), "5");
-
-                    ahq.QueryId = o["QueryId"].GetValue().ToString();
-                    ahq.QueryString = o["QueryString"].GetValue().ToString();
-                    ahq.ParamInfo = new Dictionary<string, string>();                   
-
-                    List<JsonObject> s2 = (List < JsonObject >) o["ParamInfo"].GetValue(); 
-                    foreach( JsonObject s in s2)
-                    {
-                        JsonObjectCollection s3 = (JsonObjectCollection)s;
-                        //MessageBox.Show(s3["name"].GetValue().ToString(), "6");
-                        //MessageBox.Show(s3["type"].GetValue().ToString(), "7");
-
-                        ahq.ParamInfo.Add(s3["name"].GetValue().ToString(), s3["type"].GetValue().ToString());
-
-                    }
-                    AdHocQueryInfo.Add(ahq);
+                    ahq.ParamInfo.Add(pi.name, pi.type);
                 }
+                AdHocQueryInfo.Add(ahq);
             }
             return true;
-        }
-
-  
+        } 
 
         public string LoadJson(string filename)
         {
@@ -542,6 +555,24 @@ namespace DBSP2ClassGen
             sr.Close();
             return temp.ToString();
         }
+        public void SaveJson(string jsontext)
+        {
+            StreamWriter sw = new StreamWriter("./config.json");
+            sw.Write(jsontext);
+            sw.Close();
+
+        }
+        public void SaveConfig()
+        {
+            string output = JsonConvert.SerializeObject(ci);
+            SaveJson(output);
+        }
+        public void GetConfigInfo(ref ConfigInfo ci)
+        {
+            string jsonText = LoadJson("./config.json");
+            ci = JsonConvert.DeserializeObject<ConfigInfo>(jsonText);
+        }
     } // end of class 
+    
 } // end of namespace 
 
