@@ -208,7 +208,7 @@ namespace DBSP2ClassGen
 
                 result.Append(classstring.ToString());                
             }
-            if (AdHocQueryInfo != null)
+            if (AdHocQueryInfo != null) // if there are any ad-hoc queries.
             {
                 foreach (AdHocQuery item in AdHocQueryInfo)
                 {

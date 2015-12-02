@@ -21,7 +21,7 @@ namespace DBSP2ClassGen
         {
             InitializeComponent();
 
-            if( File.Exists("./config.json") )
+            if( File.Exists("./config.json") ) // load config file if exists.
             {
                 DBSP2ClassGen.dbhandler d = new DBSP2ClassGen.dbhandler();
                 ConfigInfo ci = new ConfigInfo();
@@ -78,7 +78,7 @@ namespace DBSP2ClassGen
             if( txtIP.Text.ToString().Length != 0 && 
                 txtPort.Text.ToString().Length != 0 && 
                 txtUsername.Text.ToString().Length != 0 &&
-                txtPassword.Text.ToString().Length != 0 )
+                txtPassword.Text.ToString().Length != 0 ) // implement visual studio's db selection feature. 
             {
                 List<string> dblist; 
                 DBSP2ClassGen.dbhandler d = new DBSP2ClassGen.dbhandler();
