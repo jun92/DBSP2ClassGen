@@ -35,12 +35,7 @@ namespace DBSP2ClassGen
                 cbxDatabaseList.Text = ci.dbname.ToString();
                 if( ci.adHocFilename != null )
                     lblAdHoc.Text = ci.adHocFilename.ToString();
-                
-
             }
-
-            
-
             AppDefaultDir = System.Environment.CurrentDirectory;
         }
 

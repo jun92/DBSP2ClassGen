@@ -87,19 +87,19 @@ namespace DBSP2ClassGen
         public void LoadAllTemplate()
         {
             MainTemplate = new StringBuilder();
-            MainTemplate.Append(LoadTemplate("../../Source_Template/DBSP2Class_MainTemplate.cs"));
+            MainTemplate.Append(LoadTemplate("./DBSP2Class_MainTemplate.cs"));
             SPClassesTemplate = new StringBuilder();
-            SPClassesTemplate.Append(LoadTemplate("../../Source_Template/DBSP2Class_SPClassesTemplate.cs"));
+            SPClassesTemplate.Append(LoadTemplate("./DBSP2Class_SPClassesTemplate.cs"));
             SqlParamInit_Output = new StringBuilder();
-            SqlParamInit_Output.Append(LoadTemplate("../../Source_Template/DBSP2Class_SqlParamInit_Output.cs"));
+            SqlParamInit_Output.Append(LoadTemplate("./DBSP2Class_SqlParamInit_Output.cs"));
             SqlParamInit_Input = new StringBuilder();
-            SqlParamInit_Input.Append(LoadTemplate("../../Source_Template/DBSP2Class_SqlParamInit_Input.cs"));
+            SqlParamInit_Input.Append(LoadTemplate("./DBSP2Class_SqlParamInit_Input.cs"));
             SqlParamAdd = new StringBuilder();
-            SqlParamAdd.Append(LoadTemplate("../../Source_Template/DBSP2Class_SqlParamAdd.cs"));
+            SqlParamAdd.Append(LoadTemplate("./DBSP2Class_SqlParamAdd.cs"));
             DeclareOutputParam = new StringBuilder();
-            DeclareOutputParam.Append(LoadTemplate("../../Source_Template/DBSP2Class_DeclareOutputParam.cs"));
+            DeclareOutputParam.Append(LoadTemplate("./DBSP2Class_DeclareOutputParam.cs"));
             SaveOutputParam = new StringBuilder();
-            SaveOutputParam.Append(LoadTemplate("../../Source_Template/DBSP2Class_SaveOutputParam.cs"));
+            SaveOutputParam.Append(LoadTemplate("./DBSP2Class_SaveOutputParam.cs"));
         }
 
         public string LoadTemplate(string filename)
